@@ -5,6 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opensuit"
 version = "0.1.0"
+dependencies = [
+  "slack-bolt>=1.18.0",
+  "python-dotenv>=1.0.0"
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
