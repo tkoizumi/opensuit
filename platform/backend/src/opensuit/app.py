@@ -1,20 +1,36 @@
 import os
+from pathlib import Path
 
+import certifi
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from mangum import Mangum
 from slack_bolt import App as SlackApp
 from slack_bolt.adapter.fastapi import SlackRequestHandler
+from slack_bolt.oauth.oauth_settings import OAuthSettings
+from slack_sdk.oauth.installation_store import FileInstallationStore
 
 from opensuit.core.agent import Agent
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+env_path = BASE_DIR / ".env"
+load_dotenv(dotenv_path=env_path)
+
+oauth_settings = OAuthSettings(
+    client_id=os.environ.get("SLACK_CLIENT_ID"),
+    client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
+    scopes=["app_mentions:read", "chat:write"],  # Add any other scopes you need
+    installation_store=FileInstallationStore(base_dir="./data"),
+)
+
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
 app = FastAPI(title="OpenSuit API")
 agent = Agent()
 
 slack_app = SlackApp(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+    oauth_settings=oauth_settings,
     process_before_response=True,
 )
 slack_handler = SlackRequestHandler(slack_app)
@@ -27,6 +43,16 @@ def handle_app_mentions(event, say):
 
     response = agent.process_request(clean_query)
     say(f"Agent Response: {response}")
+
+
+@app.get("/slack/install")
+async def install(req: Request):
+    return await slack_handler.handle(req)
+
+
+@app.get("/slack/oauth_redirect")
+async def oauth_redirect(req: Request):
+    return await slack_handler.handle(req)
 
 
 @app.post("/slack/events")
