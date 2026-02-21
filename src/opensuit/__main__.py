@@ -2,12 +2,13 @@ import os
 
 # Set SSL certificate path for Slack API requests
 import certifi
-os.environ['SSL_CERT_FILE'] = certifi.where()
+
+os.environ["SSL_CERT_FILE"] = certifi.where()
 
 from dotenv import load_dotenv
 
+from opensuit.handlers.slack_app import start_slack_connector
 from opensuit.main import Agent
-from opensuit.slack_app import start_slack_connector
 
 
 def run():
